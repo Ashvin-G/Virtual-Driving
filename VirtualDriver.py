@@ -50,17 +50,19 @@ while True:
 
     mask = cv2.inRange(roi_hsv, lower_skin, upper_skin)
 
-    
-
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    
-
-    c = []
+    cs = []
     for contour in contours:
         if cv2.contourArea(contour) > 10000:
-            c.append(contour)
-    #cv2.drawContours(frame[int(frame_height/2):frame_height, :], c, -1, (0, 255, 0), 1)
+            cs.append(contour)
+    #cv2.drawContours(frame[int(frame_height/2):frame_height, :], cs, -1, (0, 255, 0), 1)
+
+    for c in cs:
+        M = cv2.moments(c)
+        cx = int(M['m10']/M['m00'])
+        cy = int(M['m01']/M['m00'])
+
+        cv2.circle(frame[int(frame_height/2):frame_height, :], (cx, cy), 2, (0, 0, 255), -1)
 
     try:
         hands = cv2.bitwise_and(roi, roi, mask=mask)
