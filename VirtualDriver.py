@@ -16,7 +16,7 @@ cv2.createTrackbar("LV", "HSV Adjuster", 0, 255, nothing)
 cv2.createTrackbar("UH", "HSV Adjuster", 0, 255, nothing)
 cv2.createTrackbar("US", "HSV Adjuster", 0, 255, nothing)
 cv2.createTrackbar("UV", "HSV Adjuster", 0, 255, nothing)
-cv2.createTrackbar("Default", "HSV Adjuster", 0, 1, nothing)
+
 
 cv2.setTrackbarPos("LH", "HSV Adjuster", 0)
 cv2.setTrackbarPos("LS", "HSV Adjuster", 50)
@@ -52,10 +52,28 @@ while True:
 
     
 
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    
+
+    c = []
+    for contour in contours:
+        if cv2.contourArea(contour) > 10000:
+            c.append(contour)
+    #cv2.drawContours(frame[int(frame_height/2):frame_height, :], c, -1, (0, 255, 0), 1)
+
+    try:
+        hands = cv2.bitwise_and(roi, roi, mask=mask)
+        cv2.imshow("hands", hands)
+    except:
+        pass
+    
+
+    
+
     cv2.imshow('Frame', frame)
-    cv2.imshow('ROI', roi)
-    cv2.imshow('mask', mask)
-    cv2.imshow('roi_hsv', roi_hsv)
+    
+   
 
     if cv2.waitKey(1) == 27:
         break
