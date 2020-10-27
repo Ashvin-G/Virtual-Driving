@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from screen import screen
 
 def nothing(x):
     pass
@@ -29,6 +30,8 @@ cv2.setTrackbarPos("UV", "HSV Adjuster", 255)
 while True:
     ret, frame = cap.read()
     frame = cv2.flip(frame, 1)
+
+    frame_game = screen()
 
     lh = cv2.getTrackbarPos("LH", "HSV Adjuster")
     ls = cv2.getTrackbarPos("LS", "HSV Adjuster")
@@ -74,6 +77,7 @@ while True:
     
 
     cv2.imshow('Frame', frame)
+    cv2.imshow('Screen', frame_game)
     
    
 
