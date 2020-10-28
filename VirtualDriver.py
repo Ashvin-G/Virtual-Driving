@@ -10,6 +10,7 @@ cameraPort = 0
 
 cap = cv2.VideoCapture(cameraPort, cv2.CAP_DSHOW)
 
+
 cv2.namedWindow("HSV Adjuster")
 cv2.createTrackbar("LH", "HSV Adjuster", 0, 255, nothing)
 cv2.createTrackbar("LS", "HSV Adjuster", 0, 255, nothing)
@@ -26,7 +27,6 @@ cv2.setTrackbarPos("LV", "HSV Adjuster", 58)
 cv2.setTrackbarPos("UH", "HSV Adjuster", 30)
 cv2.setTrackbarPos("US", "HSV Adjuster", 255)
 cv2.setTrackbarPos("UV", "HSV Adjuster", 255)
-
 while True:
     ret, frame = cap.read()
     frame = cv2.flip(frame, 1)
@@ -69,7 +69,7 @@ while True:
 
     try:
         hands = cv2.bitwise_and(roi, roi, mask=mask)
-        cv2.imshow("hands", hands)
+        #cv2.imshow("hands", hands)
     except:
         pass
     
@@ -81,11 +81,16 @@ while True:
     
    
 
+    if cv2.waitKey(1) == ord('q'):
+        cv2.destroyWindow('HSV Adjuster')
     if cv2.waitKey(1) == 27:
         break
+        
+    
 
 
 
 
 cap.release()
 cv2.destroyAllWindows()
+
