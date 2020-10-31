@@ -23,7 +23,7 @@ while True:
     game_frame = screen_stream()
     detector(game_frame)
     
-    cv2.imshow('webcam_frame', webcam_frame)
+    #cv2.imshow('webcam_frame', webcam_frame)
     cv2.imshow('game_frame', game_frame)
 
     

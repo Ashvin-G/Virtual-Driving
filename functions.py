@@ -3,10 +3,11 @@ import numpy as np
 from PIL import ImageGrab
 from math import trunc
 from net_config import *
+from math import sqrt
 
 def screen_stream():
     while True:
-        screen = np.array(ImageGrab.grab(bbox=(0, 91, 716, 413)))
+        screen = np.array(ImageGrab.grab(bbox=(0, 91, 680, 600)))
         screen = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
         return screen
 
@@ -54,29 +55,33 @@ def detector(frame):
         confidence = detections[0, 0, i, 2]
         if confidence > 0.3:
             class_id = int(detections[0, 0, i, 1])
-            xLeftBottom = int(detections[0, 0, i, 3] * cols) 
-            yLeftBottom = int(detections[0, 0, i, 4] * rows)
-            xRightTop   = int(detections[0, 0, i, 5] * cols)
-            yRightTop   = int(detections[0, 0, i, 6] * rows)
+            if class_id == 7 or class_id == 6 or class_id == 19:
+                xLeftTop = int(detections[0, 0, i, 3] * cols) 
+                yLeftTop = int(detections[0, 0, i, 4] * rows)
+                xRightBottom   = int(detections[0, 0, i, 5] * cols)
+                yRightBottom   = int(detections[0, 0, i, 6] * rows)
 
-            heightFactor = frame.shape[0]/300.0  
-            widthFactor = frame.shape[1]/300.0
+                heightFactor = frame.shape[0]/300.0  
+                widthFactor = frame.shape[1]/300.0
 
-            xLeftBottom = int(widthFactor * xLeftBottom) 
-            yLeftBottom = int(heightFactor * yLeftBottom)
-            xRightTop   = int(widthFactor * xRightTop)
-            yRightTop   = int(heightFactor * yRightTop)
+                xLeftTop = int(widthFactor * xLeftTop) 
+                yLeftTop = int(heightFactor * yLeftTop)
+                xRightBottom   = int(widthFactor * xRightBottom)
+                yRightBottom   = int(heightFactor * yRightBottom)
 
-            cv2.rectangle(frame, (xLeftBottom, yLeftBottom), (xRightTop, yRightTop),
-                          (0, 255, 0), 2)
+                
 
-            if class_id in classNames:
-                label = classNames[class_id] + ": " + str(trunc(confidence * 100)) + "%"
-                labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                cv2.rectangle(frame, (xLeftTop, yLeftTop), (xRightBottom, yRightBottom),
+                            (0, 255, 0), 2)
 
-                yLeftBottom = max(yLeftBottom, labelSize[1])
-                cv2.rectangle(frame, (xLeftBottom, yLeftBottom - labelSize[1]),
-                                     (xLeftBottom + labelSize[0], yLeftBottom + baseLine),
-                                     (255, 255, 255), cv2.FILLED)
-                cv2.putText(frame, label, (xLeftBottom, yLeftBottom),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                if class_id in classNames:
+                    label = classNames[class_id] + ": " + str(trunc(confidence * 100)) + "%"
+                    labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+
+                    yLeftBottom = max(yLeftTop, labelSize[1])
+                    cv2.rectangle(frame, (xLeftTop, yLeftTop - labelSize[1]),
+                                        (xLeftTop + labelSize[0], yLeftTop + baseLine),
+                                        (255, 255, 255), cv2.FILLED)
+                    cv2.putText(frame, label, (xLeftTop, yLeftTop),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                
