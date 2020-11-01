@@ -1,11 +1,13 @@
 import cv2
 import numpy as np
+import pyautogui
 from functions import draw_center_line
 from functions import mask_roi
 from functions import find_contours
 from functions import draw_centroids
 from functions import screen_stream
 from functions import detector
+from functions import compute_distance
 
 cameraPort = 0
 cap = cv2.VideoCapture(cameraPort, cv2.CAP_DSHOW)
@@ -21,7 +23,9 @@ while True:
 
 
     game_frame = screen_stream()
-    detector(game_frame)
+    xLeftTop, yLeftTop, xRightBottom, yRightBottom = detector(game_frame)
+
+    compute_distance(xLeftTop, yLeftTop, xRightBottom, yRightBottom, game_frame, game_frame.shape[0], game_frame.shape[1])
     
     #cv2.imshow('webcam_frame', webcam_frame)
     cv2.imshow('game_frame', game_frame)

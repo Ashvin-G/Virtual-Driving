@@ -4,10 +4,12 @@ from PIL import ImageGrab
 from math import trunc
 from net_config import *
 from math import sqrt
+from math import atan
+from math import degrees
 
 def screen_stream():
     while True:
-        screen = np.array(ImageGrab.grab(bbox=(0, 91, 680, 600)))
+        screen = np.array(ImageGrab.grab(bbox=(0, 91, 780, 600)))
         screen = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
         return screen
 
@@ -56,6 +58,7 @@ def detector(frame):
         if confidence > 0.3:
             class_id = int(detections[0, 0, i, 1])
             if class_id == 7 or class_id == 6 or class_id == 19:
+                flag = 1
                 xLeftTop = int(detections[0, 0, i, 3] * cols) 
                 yLeftTop = int(detections[0, 0, i, 4] * rows)
                 xRightBottom   = int(detections[0, 0, i, 5] * cols)
@@ -84,4 +87,62 @@ def detector(frame):
                                         (255, 255, 255), cv2.FILLED)
                     cv2.putText(frame, label, (xLeftTop, yLeftTop),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                    if flag == 1:
+                        return xLeftTop, yLeftTop, xRightBottom, yRightBottom
+    return 0, 0, 0, 0
                 
+    
+
+
+
+def compute_distance(xLeftTop, yLeftTop, xRightBottom, yRightBottom, game_frame,  game_frame_height, game_frame_width):
+    if xLeftTop != 0 and yLeftTop !=0 and xRightBottom !=0 and yRightBottom != 0:
+        x_mid_bbox = int((xLeftTop + xRightBottom)/2)
+        y_mid_bbox = int((yLeftTop + yRightBottom)/2)
+
+        cv2.circle(game_frame, (x_mid_bbox, y_mid_bbox), 1, (0, 0, 255), -1)
+
+        cv2.line(game_frame, (x_mid_bbox, y_mid_bbox), (0, game_frame_height), (0, 0, 255), 3)
+        cv2.line(game_frame, (x_mid_bbox, y_mid_bbox), (game_frame_width, game_frame_height), (0, 0, 255), 3)
+        cv2.line(game_frame, (x_mid_bbox, y_mid_bbox), (int(game_frame_width/2), game_frame_height), (0, 0, 255), 3)
+
+        slope_L_m1 = (y_mid_bbox - game_frame_height)/(x_mid_bbox)
+        slope_L_m2 = 0
+
+
+        slope_R_m1 = (y_mid_bbox - game_frame_height)/(x_mid_bbox - game_frame_width)
+        slope_R_m2 = 0
+
+        angR_L = atan((slope_L_m1 - slope_L_m2)/(1 + slope_L_m1*slope_L_m2))
+        angD_L = abs(round(degrees(angR_L)))
+
+        angR_R = atan((slope_R_m1 - slope_R_m2)/(1 + slope_R_m1*slope_L_m2))
+        angD_R = abs(round(degrees(angR_R)))
+
+        
+        if angD_L > angD_R:
+            cv2.putText(game_frame, "Vehicle on Left", (int(game_frame_width/2), game_frame_height), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        elif (angD_R > angD_L):
+            cv2.putText(game_frame, "Vehicle on Right", (int(game_frame_width/2), game_frame_height), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        else:
+            pass
+
+
+
+            
+
+
+def lane(game_frame):
+    game_frame_height, game_frame_width, channel = game_frame.shape
+    mask = np.zeros_like(game_frame)
+    vertices = np.array([[0, 410], [0, 320], [348, 290], [518, 290], [game_frame_width, 315], [game_frame_width, 395], [600, 350], [245, 350]])
+    cv2.fillPoly(mask, [vertices], (255, 255, 255))
+    masked = cv2.bitwise_and(game_frame, mask)
+    gray = cv2.cvtColor(masked, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(gray, threshold1=200, threshold2=300)
+    lower_vertices = np.array([[0, game_frame_height], [0, 410], [245, 350], [600, 350], [game_frame_width, 395], [game_frame_width, game_frame_height]])
+    cv2.fillPoly(edges, [lower_vertices], (0, 0, 0))
+    cv2.line(edges, (0, 320), (348, 290), (0, 0, 0), 2)
+    cv2.line(edges, (348, 290), (518, 290), (0, 0, 0), 2)
+    cv2.line(edges, (518, 290), (game_frame_width, 395), (0, 0, 0), 2)
+    return edges
