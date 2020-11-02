@@ -7,6 +7,10 @@ from math import sqrt
 from math import atan
 from math import degrees
 
+
+def nothing(x):
+    pass
+
 def screen_stream():
     while True:
         screen = np.array(ImageGrab.grab(bbox=(0, 91, 780, 600)))
@@ -22,11 +26,23 @@ def mask_roi(frame):
     roi = frame[int(frame_height/2):frame_height, :]
     roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
-    lower_skin = np.array([0, 50, 58], dtype = "uint8") 
-    upper_skin = np.array([30, 255, 255], dtype = "uint8")
+    lh = 0
+    ls = 50
+    lv = 58
+
+    uh = 30
+    us = 255
+    uv = 255
+
+    lower_skin = np.array([lh, ls, lv], dtype = "uint8") 
+    upper_skin = np.array([uh, us, uv], dtype = "uint8")
     
     mask = cv2.inRange(roi_hsv, lower_skin, upper_skin)
     mask = cv2.GaussianBlur(mask, (5, 5), 0)
+
+    hands = cv2.bitwise_and(roi, roi, mask=mask)
+
+    cv2.imshow('hands', hands)
     return mask
 
 def find_contours(mask):
@@ -45,7 +61,7 @@ def draw_centroids(contours, frame):
         cy = int(M['m01']/M['m00'])
         cv2.circle(frame[int(frame_height/2):frame_height, :], (cx, cy), 2, (0, 0, 255), -1)
                  
-def detector(frame):
+def detect_vehicles(frame):
     frame_resized = cv2.resize(frame,(300,300))
     blob = cv2.dnn.blobFromImage(frame_resized, 0.007843, (300, 300), (127.5, 127.5, 127.5), False)
     net.setInput(blob)
@@ -88,8 +104,9 @@ def detector(frame):
                     cv2.putText(frame, label, (xLeftTop, yLeftTop),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
                     if flag == 1:
-                        return xLeftTop, yLeftTop, xRightBottom, yRightBottom
-    return 0, 0, 0, 0
+                        coords = xLeftTop, yLeftTop, xRightBottom, yRightBottom
+                        return coords
+    return (0, 0, 0, 0)
                 
     
 
