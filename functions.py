@@ -1,12 +1,62 @@
 import cv2
 import numpy as np
+import os
+from os import path
 from PIL import ImageGrab
 from math import trunc
 from net_config import *
 from math import sqrt
 from math import atan
 from math import degrees
+import win32gui, win32ui, win32con, win32api
 
+
+def helpWindow(frame):
+    help_window = np.ones_like(frame)
+    help_window = help_window*255
+
+    text = "* Place you fist in respective region. \n \n* For best result avoid similar skin colour interfering\nin the region.\n\n* Adjust Lower and Upper HSV such that\n fist's have maximum white area.\n\n* Press Esc to exit."
+    y0, dy = 125, 30
+    for i, line in enumerate(text.split('\n')):
+        y = y0 + i*dy
+        cv2.putText(help_window, line, (50, y ), cv2.FONT_HERSHEY_SIMPLEX, 0.65, 2)
+    cv2.imshow('Help Window', help_window)
+
+
+
+def grab_screen(region=None):
+    #Function created by Frannecklp
+    
+    hwin = win32gui.GetDesktopWindow()
+
+    if region:
+            left,top,x2,y2 = region
+            width = x2 - left + 1
+            height = y2 - top + 1
+    else:
+        width = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
+        height = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+        left = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
+        top = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
+
+    hwindc = win32gui.GetWindowDC(hwin)
+    srcdc = win32ui.CreateDCFromHandle(hwindc)
+    memdc = srcdc.CreateCompatibleDC()
+    bmp = win32ui.CreateBitmap()
+    bmp.CreateCompatibleBitmap(srcdc, width, height)
+    memdc.SelectObject(bmp)
+    memdc.BitBlt((0, 0), (width, height), srcdc, (left, top), win32con.SRCCOPY)
+    
+    signedIntsArray = bmp.GetBitmapBits(True)
+    img = np.fromstring(signedIntsArray, dtype='uint8')
+    img.shape = (height,width,4)
+
+    srcdc.DeleteDC()
+    memdc.DeleteDC()
+    win32gui.ReleaseDC(hwin, hwindc)
+    win32gui.DeleteObject(bmp.GetHandle())
+
+    return cv2.resize(img, (800, 600))
 
 def nothing(x):
     pass
@@ -34,6 +84,24 @@ def mask_roi(frame):
     us = 255
     uv = 255
 
+    hsv = []
+    if path.exists("hsv.txt"):
+        file_hsv = open("hsv.txt", "r")
+        lines = file_hsv.readlines()
+
+        for line in lines:
+            hsv.append(line.strip())
+
+        lh = hsv[0]
+        ls = hsv[1]
+        lv = hsv[2]
+
+        uh = hsv[3]
+        us = hsv[4]
+        uv = hsv[5]
+        file_hsv.close()
+        os.remove("hsv.txt")
+
     lower_skin = np.array([lh, ls, lv], dtype = "uint8") 
     upper_skin = np.array([uh, us, uv], dtype = "uint8")
     
@@ -42,8 +110,8 @@ def mask_roi(frame):
 
     hands = cv2.bitwise_and(roi, roi, mask=mask)
 
-    cv2.imshow('hands', hands)
-    return mask
+    
+    return mask, hands
 
 def find_contours(mask):
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -138,18 +206,14 @@ def compute_distance(xLeftTop, yLeftTop, xRightBottom, yRightBottom, game_frame,
 
         
         if angD_L > angD_R:
-            cv2.putText(game_frame, "Vehicle on Left", (int(game_frame_width/2), game_frame_height), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+            cv2.putText(game_frame, "Vehicle on Left", (int(game_frame_width/2) - 150, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         elif (angD_R > angD_L):
-            cv2.putText(game_frame, "Vehicle on Right", (int(game_frame_width/2), game_frame_height), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+            cv2.putText(game_frame, "Vehicle on Right", (int(game_frame_width/2) - 150, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         else:
             pass
 
 
-
-            
-
-
-def lane(game_frame):
+def lane_region(game_frame):
     game_frame_height, game_frame_width, channel = game_frame.shape
     mask = np.zeros_like(game_frame)
     vertices = np.array([[0, 410], [0, 320], [348, 290], [518, 290], [game_frame_width, 315], [game_frame_width, 395], [600, 350], [245, 350]])
@@ -163,3 +227,50 @@ def lane(game_frame):
     cv2.line(edges, (348, 290), (518, 290), (0, 0, 0), 2)
     cv2.line(edges, (518, 290), (game_frame_width, 395), (0, 0, 0), 2)
     return edges
+
+
+def make_coordinates(game_frame, line_parameters):
+    try:
+        if line_parameters is not None:
+            slope, intercept = line_parameters
+            y1 = game_frame.shape[0]
+            y2 = int(y1 * (3/5))
+            x1 = int((y1 - intercept)/slope)
+            x2 = int((y2 - intercept)/slope)
+
+
+            cv2.line(game_frame, (x1, y1), (x2, y2), (0, 255, 0), 5)
+    except:
+        pass
+
+def average_slope_intercept(game_frame, lines):
+    try:
+        left_fit = []
+        right_fit = []
+
+        for line in lines:
+            x1, y1, x2, y2 = line.reshape(4)
+            parameters = np.polyfit((x1, x2), (y1, y2), 1)
+            slope = parameters[0]
+            intercept = parameters[1]
+
+            if slope < 0:
+                left_fit.append((slope, intercept))
+            else:
+                right_fit.append((slope, intercept))
+
+        left_fit_average = np.average(left_fit, axis=0)
+        right_fit_average = np.average(right_fit, axis=0)
+
+        left_line = make_coordinates(game_frame, left_fit_average)
+        right_line = make_coordinates(game_frame, right_fit_average)
+    except:
+        pass
+
+def draw_lane_lines(edges, game_frame):
+    try:
+        lines = cv2.HoughLinesP(edges, 1, np.pi/180, 160, np.array([]), 40, 5)
+
+        averaged_lines = average_slope_intercept(game_frame, lines)
+    except:
+        pass

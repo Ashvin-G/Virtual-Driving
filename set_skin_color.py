@@ -1,25 +1,21 @@
 import cv2
 import time
 import numpy as np
+
 from functions import nothing
+from functions import helpWindow
 
 TIMER = int(5)
 
-cap = cv2.VideoCapture(0)
+cameraPort = 0
+cap = cv2.VideoCapture(cameraPort, cv2.CAP_DSHOW)
 
 ret, frame = cap.read()
 
 flash = np.ones_like(frame)
 flash = flash * 255
 
-help_window = np.ones_like(frame)
-help_window = help_window*255
 
-text = "* Place you fist in respective region. \n \n* For best result avoid similar skin colour interfering\nin the region.\n\n* Adjust Lower and Upper HSV such that\n fist's have maximum white area.\n\n* Press Esc to exit."
-y0, dy = 125, 30
-for i, line in enumerate(text.split('\n')):
-    y = y0 + i*dy
-    cv2.putText(help_window, line, (50, y ), cv2.FONT_HERSHEY_SIMPLEX, 0.65, 2)
 
 
 flag = 0
@@ -34,7 +30,7 @@ while True:
     key = cv2.waitKey(125)
 
     if key == ord('h'):
-        cv2.imshow('help', help_window)
+        helpWindow(frame)
 
     
     elif key == ord('q'):
@@ -120,6 +116,10 @@ if flag == 1:
         cv2.imshow('mask', mask)
         if cv2.waitKey(1) == 27:
             break
+    
+    f = open("hsv.txt", "w")
+    f.write(str(lh) + "\n" + str(ls) + "\n" + str(lv) + "\n" + str(uh) + "\n" + str(us) + "\n" + str(uv))
+    f.close()
 
     cv2.destroyAllWindows()
             
