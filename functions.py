@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import os
+import math
 from os import path
 from PIL import ImageGrab
 from math import trunc
@@ -9,7 +10,39 @@ from math import sqrt
 from math import atan
 from math import degrees
 import win32gui, win32ui, win32con, win32api
+from directKeys import W, A, S, D, PressKey, ReleaseKey
 
+
+def throttle():
+    PressKey(W)
+    ReleaseKey(A)
+    ReleaseKey(S)
+    ReleaseKey(D)
+
+
+def left():
+    PressKey(A)
+    ReleaseKey(W)
+    ReleaseKey(S)
+    ReleaseKey(D)
+
+def right():
+    PressKey(D)
+    ReleaseKey(A)
+    ReleaseKey(W)
+    ReleaseKey(D)
+
+def reverse():
+    PressKey(S)
+    ReleaseKey(A)
+    ReleaseKey(W)
+    ReleaseKey(D)
+
+def slow():
+    ReleaseKey(W)
+    ReleaseKey(A)
+    ReleaseKey(S)
+    ReleaseKey(D)
 
 def helpWindow(frame):
     help_window = np.ones_like(frame)
@@ -55,6 +88,8 @@ def grab_screen(region=None):
     memdc.DeleteDC()
     win32gui.ReleaseDC(hwin, hwindc)
     win32gui.DeleteObject(bmp.GetHandle())
+
+    img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
 
     return cv2.resize(img, (800, 600))
 
@@ -108,27 +143,80 @@ def mask_roi(frame):
     mask = cv2.inRange(roi_hsv, lower_skin, upper_skin)
     mask = cv2.GaussianBlur(mask, (5, 5), 0)
 
-    hands = cv2.bitwise_and(roi, roi, mask=mask)
+    hands_RGB = cv2.bitwise_and(roi, roi, mask=mask)
 
     
-    return mask, hands
+    return mask, hands_RGB
 
 def find_contours(mask):
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cs = []
+    hands = []
     for contour in contours:
         if cv2.contourArea(contour) > 10000:
-            cs.append(contour)
-    return cs
+            hands.append(contour)
+    return hands
 
-def draw_centroids(contours, frame):
+def draw_centroids_compute_slope_direction(hands, frame):
     frame_height, frame_width, channel = frame.shape
-    for contour in contours:
-        M = cv2.moments(contour)
-        cx = int(M['m10']/M['m00'])
-        cy = int(M['m01']/M['m00'])
-        cv2.circle(frame[int(frame_height/2):frame_height, :], (cx, cy), 2, (0, 0, 255), -1)
+
+    if len(hands) == 2:
+        hand1 = hands[0]
+        hand2 = hands[1]
+
+        m1 = cv2.moments(hand1)
+        h1_cx = int(m1['m10']/m1['m00'])
+        h1_cy = int(m1['m01']/m1['m00'])
+
+        m2 = cv2.moments(hand2)
+        h2_cx = int(m2['m10']/m2['m00'])
+        h2_cy = int(m2['m01']/m2['m00'])
+
+
+        cv2.circle(frame[int(frame_height/2):frame_height, :], (h1_cx, h1_cy), 3, (0, 0, 255), -1)
+        cv2.circle(frame[int(frame_height/2):frame_height, :], (h2_cx, h2_cy), 3, (0, 0, 255), -1)
+
+        cv2.line(frame[int(frame_height/2):frame_height, :], (h1_cx, h1_cy), (h2_cx, h2_cy), (0, 0, 255), 2)
+
+        dist = math.sqrt((h2_cx - h1_cx)**2 + (h2_cy - h1_cy)**2)
+
+        slope = (h2_cy - h1_cy)/(h2_cx - h1_cx)
+        slope = (-1) * slope
+        
+        return dist, slope
+    else:
+        return None, None
+
+def control(dist, slope):
+    if dist is not None and slope is not None:
+        if dist > 450:
+            throttle()
+            if slope < -0.25:
+                right()
+            elif slope > 0.25:
+                left()
+        elif dist < 250:
+            reverse()
+        else:
+            slow()
+
+        
+
+        
+
+    
+
+    
+    
                  
+
+
+
+
+
+
+
+
+
 def detect_vehicles(frame):
     frame_resized = cv2.resize(frame,(300,300))
     blob = cv2.dnn.blobFromImage(frame_resized, 0.007843, (300, 300), (127.5, 127.5, 127.5), False)
