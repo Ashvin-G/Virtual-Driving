@@ -1,7 +1,7 @@
 # Virtual-Driving
 
 ### Prerequisites
-This program was implemented using Python 3.7.0 and several other external opensource library such as
+This project was developed around Need For Speed: Most Wanted (2012) environment and implemented using Python 3.7.0 and several other external opensource library such as
 1. OpenCV
 2. numpy
 3. pyautogui
@@ -25,3 +25,8 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_TARGET)
 ```
 in net_config.py file.
 
+Refer this video [Build and Install OpenCV With CUDA (GPU) Support on Windows 10](https://youtu.be/tjXkW0-4gME) on youtube to install and build OpenCV with GPU support.
+
+
+### Acknowledgement
+The project is inpired from Tanay Karve [Driving using motion recognition](https://github.com/TanayKarve/Driving-using-motion-recogniton) and Sentdex [Python Plays GTA V](https://www.youtube.com/watch?v=ks4MPfMq8aQ&list=PLQVvvaa0QuDeETZEOy4VdocT7TOjfSA8a)
