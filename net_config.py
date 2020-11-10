@@ -12,6 +12,6 @@ prototxt = "model_data/MobileNetSSD_deploy.prototxt"
 weights = "model_data/MobileNetSSD_deploy.caffemodel"
 
 net = cv2.dnn.readNetFromCaffe(prototxt, weights)
-net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
