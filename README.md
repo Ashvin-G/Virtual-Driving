@@ -11,3 +11,4 @@ $ pip install opencv-python
 $ pip install numpy
 $ pip install pyautogui
 ```
+The program is capable of detecting cars, truck and train in the video stream. This was capable by using MobileNet-SSD (Single shot detection) network and Caffe framework which is intended to perform object detection.
