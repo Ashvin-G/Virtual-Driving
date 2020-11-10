@@ -2,12 +2,14 @@
 
 ### Prerequisites
 This project was developed around Need For Speed: Most Wanted (2012) environment and implemented using Python 3.7.0 and several other external opensource library such as
-1. OpenCV
-2. numpy
-3. pyautogui
+1. opencv
+2. opencv-contrib
+3. numpy
+4. pyautogui
 You can install these packages by following command.
 ```
 $ pip install opencv-python
+$ pip install opencv-contrib-python
 $ pip install numpy
 $ pip install pyautogui
 ```
